@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friction Lab Simulation</title>
+<style>
+ :root{--primary:#007acc;--accent:#c00;--bg:#f7f7f7;}
+ *{box-sizing:border-box;}
+ body{margin:0;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:#333;}
+ h1{text-align:center;margin:20px 0;font-size:2rem;}
+ .container{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;max-width:1200px;margin:0 auto 40px;padding:0 15px;}
+ .info-container{flex:1 1 320px;min-width:280px;display:flex;flex-direction:column;gap:18px;}
+ .controls{display:flex;flex-direction:column;gap:14px;}
+ .controls-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 15px;}
+ label{font-weight:600;}
+ select,input[type=range]{padding:6px 10px;font-size:1rem;border:1px solid #ccc;border-radius:4px;background:#fff;}
+ input[type=range]{width:200px;cursor:pointer;}
+ .mass-btn{padding:6px 10px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;min-width:36px;text-align:center;font-size:1rem;}
+ .mass-btn:active{background:#eee;}
+ button.action{padding:9px 20px;font-size:1rem;border:none;border-radius:4px;color:#fff;cursor:pointer;}
+ #startBtn{background:var(--primary);}#resetBtn{background:#666;}
+ #startBtn:disabled,#resetBtn:disabled{background:#999;cursor:not-allowed;}
+ .readout{font-size:2.1rem;color:var(--accent);text-align:center;min-height:2.8rem;letter-spacing:0.5px;}
+ .results{font-size:1.15rem;text-align:left; min-height:4rem; /* Adjusted height */ line-height:1.45; padding-left: 10px;}
+ .graph-container{flex:1 1 600px;min-width:320px;}
+ canvas{background:#fff;border:1px solid #ccc;width:100%;height:auto;display:block;}
+ @media(max-width:800px){.graph-container,.info-container{flex:1 1 100%;}}
+</style>
+</head>
+<body>
+<h1>Friction Lab Simulation</h1>
+<div class="container">
+ <div class="info-container">
+  <div class="controls">
+   <div class="controls-row">
+    <label for="surface">Surface Type:</label>
+    <select id="surface">
+     <option value="0.90,0.80">Rubber on Concrete</option>
+     <option value="0.55,0.45">Wood on Carpet</option>
+     <option value="0.05,0.03">Steel on Ice</option>
+     <option value="0.60,0.50">Leather on Wood</option>
+     <option value="0.40,0.30">Wood on Wood</option>
+     <option value="0.04,0.02">Wood on Ice</option>
+     <option value="0.65,0.55">Rubber on Wood</option>
+     <option value="0.74,0.57">Steel on Steel (dry)</option>
+    </select>
+   </div>
+   <div class="controls-row">
+    <label for="mass">Mass: <span id="massDisplay">0.100</span>&nbsp;kg</label>
+    <button class="mass-btn" id="massDec">&#9664;</button>
+    <input type="range" id="mass" min="100" max="2000" step="10" value="100">
+    <button class="mass-btn" id="massInc">&#9654;</button>
+   </div>
+   <div class="controls-row">
+    <button id="startBtn" class="action">Start Simulation</button>
+    <button id="resetBtn" class="action" disabled>Reset</button>
+   </div>
+  </div>
+  <div class="readout" id="forceReadout">0.00&nbsp;N</div>
+  <div class="results" id="results"></div>
+ </div>
+ <div class="graph-container">
+  <canvas id="graph" width="620" height="420"></canvas>
+ </div>
+</div>
+<script>
+(()=>{
+ // === DOM ===
+ const g=9.8;
+ const surfaceSel=document.getElementById('surface');
+ const massSlider=document.getElementById('mass');
+ const massDisplay=document.getElementById('massDisplay');
+ const massDec=document.getElementById('massDec');
+ const massInc=document.getElementById('massInc');
+ const startBtn=document.getElementById('startBtn');
+ const resetBtn=document.getElementById('resetBtn');
+ const forceReadout=document.getElementById('forceReadout');
+ const resultsDiv=document.getElementById('results');
+ const canvas=document.getElementById('graph');
+ const ctx=canvas.getContext('2d');
+
+ // === Layout ===
+ const AX=60, TOP=20, BOTTOM=360, RIGHT=canvas.width-20;
+ const GRAPH_W=RIGHT-AX, GRAPH_H=BOTTOM-TOP;
+
+ // === Simulation parameters ===
+ const dt=0.05;
+ const forceRamp=0.1;
+ const noiseMag=0.05; // Adjust this value slightly (e.g., 0.03) for more pronounced variation if desired
+ const POST_MOVE_TIME=4;
+ const MAX_TOTAL_TIME=30;
+
+ // === State ===
+ let timer=null;
+ let data=[];
+ let t=0;
+ let Fs_max=0, Fk=0; // Theoretical values (used for triggering movement)
+ let moving=false;
+ let tMoveStart=null;
+ let endTime=MAX_TOTAL_TIME;
+ let appliedForce=0;
+ let timeSpan=8;
+
+ // === Mass UI ===
+ function updateMassDisplay(){massDisplay.textContent=(massSlider.value/1000).toFixed(3);} updateMassDisplay();
+ massSlider.addEventListener('input',updateMassDisplay);
+ massDec.addEventListener('click',()=>{massSlider.value=Math.max(100,Number(massSlider.value)-10);updateMassDisplay();});
+ massInc.addEventListener('click',()=>{massSlider.value=Math.min(2000,Number(massSlider.value)+10);updateMassDisplay();});
+
+ // === Utility ===
+ function niceStep(max){
+  const raw=max/5;
+  const pow=10**Math.floor(Math.log10(raw));
+  for(const m of [1,2,5,10]) if(m*pow>=raw) return m*pow;
+  return pow*10;
+ }
+
+ // Draw axes & grid (No changes needed here)
+ function drawAxes(maxF){
+    const stepY=niceStep(maxF);
+    const yMax=Math.ceil(maxF/stepY)*stepY;
+    const stepX=1;
+    const xScale=GRAPH_W/timeSpan;
+    const yScale=GRAPH_H/yMax;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.lineWidth=1;
+    for(let f=0;f<=yMax;f+=stepY){ ctx.strokeStyle='#ccc'; const y=BOTTOM-f*yScale; ctx.beginPath();ctx.moveTo(AX,y);ctx.lineTo(RIGHT,y);ctx.stroke(); }
+    for(let f=stepY/2;f<yMax;f+=stepY){ ctx.strokeStyle='#eee'; const y=BOTTOM-f*yScale; ctx.beginPath();ctx.moveTo(AX,y);ctx.lineTo(RIGHT,y);ctx.stroke(); }
+    for(let s=0;s<=timeSpan;s+=stepX){ const x=AX+s*xScale; ctx.strokeStyle=s%1===0?'#ccc':'#eee'; ctx.beginPath();ctx.moveTo(x,TOP);ctx.lineTo(x,BOTTOM);ctx.stroke(); }
+    ctx.strokeStyle='#000'; ctx.lineWidth=1.2; ctx.beginPath();ctx.moveTo(AX,TOP);ctx.lineTo(AX,BOTTOM);ctx.lineTo(RIGHT,BOTTOM);ctx.stroke();
+    ctx.font='12px Arial'; ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.fillText('Time (s)',(AX+RIGHT)/2,BOTTOM+28);
+    ctx.save(); ctx.translate(AX-38,TOP+GRAPH_H/2); ctx.rotate(-Math.PI/2); ctx.fillText('Force (N)',0,0); ctx.restore();
+    for(let s=0;s<=timeSpan;s+=stepX){ const x=AX+s*xScale; ctx.fillText(s.toString(),x,BOTTOM+15); }
+    ctx.textAlign='right'; const fmt=stepY<1?(v)=>v.toFixed(1):(v)=>v.toFixed(0); // Axis labels might still use 1 decimal if step is small
+    for(let f=0;f<=yMax+1e-6;f+=stepY){ const y=BOTTOM-f*yScale; ctx.fillText(fmt(f),AX-5,y+4);}
+    return {xScale,yScale};
+ }
+
+ function plotData(){
+    const maxF=Math.max(1,...data.map(d=>d.force));
+    const scales=drawAxes(maxF);
+    if(data.length<2) return;
+    ctx.strokeStyle='#007acc'; ctx.lineWidth=2; ctx.beginPath();
+    data.forEach((d,i)=>{ const x=AX+d.time*scales.xScale; const y=BOTTOM-d.force*scales.yScale; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    ctx.stroke();
+ }
+
+ // === Simulation loop ===
+ function step(){
+    t+=dt;
+    if(!moving){
+        appliedForce+=forceRamp;
+        // Check includes noise, causing tMoveStart to vary slightly each run
+        if(appliedForce + (Math.random()-0.5)*2*noiseMag >= Fs_max){
+            moving=true;
+            tMoveStart=t;
+            endTime=t+POST_MOVE_TIME;
+            appliedForce=Fk; // Base force drops to theoretical kinetic
+            // *** DEBUG: Log the exact time movement starts ***
+            console.log(`Movement started at t = ${tMoveStart.toFixed(3)} s`);
+        }
+    } else {
+        appliedForce=Fk; // Base force is theoretical kinetic
+    }
+
+    if(t > timeSpan - 0.5) {
+        timeSpan = Math.ceil(t + 1);
+    }
+
+    // Apply noise for this step's measurement
+    const noisyForce = appliedForce + (Math.random() - 0.5) * 2 * noiseMag;
+    data.push({time:t, force:Math.max(0, noisyForce)});
+    // *** CHANGE: Display live force to 2 decimal places ***
+    forceReadout.innerHTML = `${noisyForce.toFixed(2)}&nbsp;N`;
+    plotData();
+
+    if(t>=endTime || t>=MAX_TOTAL_TIME) {
+        endSimulation();
+    }
+ }
+
+ // === Control helpers ===
+ function setUI(running){
+    startBtn.disabled=running;
+    resetBtn.disabled=!running;
+    surfaceSel.disabled=running;
+    massSlider.disabled=running; massDec.disabled=running; massInc.disabled=running;
+ }
+
+ function resetSimulation(){
+    if(timer){ clearInterval(timer); timer=null; }
+    data=[]; t=0; moving=false; appliedForce=0; tMoveStart=null; endTime=MAX_TOTAL_TIME; timeSpan=8;
+    // *** CHANGE: Reset readout to 2 decimal places ***
+    forceReadout.innerHTML='0.00&nbsp;N';
+    resultsDiv.innerHTML='';
+    setUI(false);
+    plotData();
+ }
+
+ function endSimulation(){
+     if(timer){
+         clearInterval(timer);
+         timer = null;
+         setUI(false);
+
+         let measured_Fs_max = 0;
+         let measured_Fk = 0;
+         let kineticDataCount = 0;
+         let kineticSum = 0;
+
+         // Analyze the collected noisy data
+         if (data.length > 0) {
+             // Find measured max static friction (peak force before tMoveStart, or overall peak if no movement)
+             const staticPhaseData = data.filter(d => tMoveStart === null || d.time < tMoveStart);
+             if (staticPhaseData.length > 0) {
+                 measured_Fs_max = Math.max(...staticPhaseData.map(d => d.force));
+             } else if (!moving && data.length > 0) {
+                 measured_Fs_max = Math.max(...data.map(d => d.force));
+             } else {
+                  // Fallback for instant movement or edge cases (could use data[0].force)
+                  measured_Fs_max = (data.length > 0) ? data[0].force : 0; // Use first point if available
+             }
+
+
+             // Calculate measured average kinetic friction (average force at or after tMoveStart)
+             if (moving && tMoveStart !== null) {
+                 const kineticPhaseData = data.filter(d => d.time >= tMoveStart);
+                 kineticDataCount = kineticPhaseData.length;
+                 if (kineticDataCount > 0) {
+                     kineticSum = kineticPhaseData.reduce((sum, d) => sum + d.force, 0);
+                     measured_Fk = kineticSum / kineticDataCount;
+                 }
+                 // If kineticDataCount is 0 (shouldn't happen normally), measured_Fk remains 0
+             }
+             // If !moving, measured_Fk remains 0
+         }
+         // If data.length is 0, both measured values remain 0
+
+
+         // *** DEBUG: Log the raw measured values before rounding ***
+         console.log(`Measured Fs (raw): ${measured_Fs_max}`);
+         console.log(`Measured Fk (raw): ${measured_Fk} (from ${kineticDataCount} points)`);
+
+         // *** CHANGE: Display only measured results ***
+         resultsDiv.innerHTML = `<b>Peak Static Friction:</b><br>` +
+                              `&nbsp;&nbsp;${measured_Fs_max.toFixed(2)} N<br><br>` +
+                              `<b>Average Kinetic Friction:</b><br>` +
+                              `&nbsp;&nbsp;${moving && kineticDataCount > 0 ? measured_Fk.toFixed(2) + ' N' : 'N/A'}`;
+
+
+         // The forceReadout still shows the last noisy value from step()
+     }
+ }
+
+
+ function startSimulation(){
+    resetSimulation();
+    const [mus,muk]=surfaceSel.value.split(',').map(Number);
+    const massKg=massSlider.value/1000; const FN=massKg*g;
+    // Store theoretical values (still needed for physics logic)
+    Fs_max=mus*FN;
+    Fk=muk*FN;
+    setUI(true);
+    timer=setInterval(step,dt*1000);
+ }
+
+ // === Event wiring ===
+ startBtn.addEventListener('click',startSimulation);
+ resetBtn.addEventListener('click',resetSimulation);
+
+ // Initial plot
+ plotData(); // Draw the initial empty axes with 0.00 readout
+})();
+</script>
+</body>
+</html>
