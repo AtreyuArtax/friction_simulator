@@ -14,8 +14,9 @@
  .controls{display:flex;flex-direction:column;gap:14px;}
  .controls-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 15px;}
  label{font-weight:600;}
- select,input[type=range]{padding:6px 10px;font-size:1rem;border:1px solid #ccc;border-radius:4px;background:#fff;}
+ select,input[type=range],input[type=number]{padding:6px 10px;font-size:1rem;border:1px solid #ccc;border-radius:4px;background:#fff;}
  input[type=range]{width:200px;cursor:pointer;}
+ .controls-row label + label {margin-left: 15px;}
  .mass-btn{padding:6px 10px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;min-width:36px;text-align:center;font-size:1rem;}
  .mass-btn:active{background:#eee;}
  button.action{padding:9px 20px;font-size:1rem;border:none;border-radius:4px;color:#fff;cursor:pointer;}
@@ -44,7 +45,16 @@
      <option value="0.04,0.02">Wood on Ice</option>
      <option value="0.65,0.55">Rubber on Wood</option>
      <option value="0.74,0.57">Steel on Steel (dry)</option>
+     <option value="custom">Custom Surface</option>
     </select>
+   </div>
+   <div class="controls-row" id="customCoeffs" style="display: none;">
+    <label>
+      Static: <input type="number" id="customStatic" min="0" max="2" step="0.01" value="0.50" style="width: 80px;">
+    </label>
+    <label>
+      Kinetic: <input type="number" id="customKinetic" min="0" max="2" step="0.01" value="0.40" style="width: 80px;">
+    </label>
    </div>
    <div class="controls-row">
     <label for="mass">Mass: <span id="massDisplay">0.100</span>&nbsp;kg</label>
@@ -69,6 +79,9 @@
  // === DOM ===
  const g=9.8;
  const surfaceSel=document.getElementById('surface');
+ const customCoeffs=document.getElementById('customCoeffs');
+ const customStatic=document.getElementById('customStatic');
+ const customKinetic=document.getElementById('customKinetic');
  const massSlider=document.getElementById('mass');
  const massDisplay=document.getElementById('massDisplay');
  const massDec=document.getElementById('massDec');
@@ -107,6 +120,15 @@
  massSlider.addEventListener('input',updateMassDisplay);
  massDec.addEventListener('click',()=>{massSlider.value=Math.max(100,Number(massSlider.value)-10);updateMassDisplay();});
  massInc.addEventListener('click',()=>{massSlider.value=Math.min(2000,Number(massSlider.value)+10);updateMassDisplay();});
+ 
+ // === Surface UI ===
+ surfaceSel.addEventListener('change', () => {
+    if (surfaceSel.value === 'custom') {
+        customCoeffs.style.display = 'flex';
+    } else {
+        customCoeffs.style.display = 'none';
+    }
+ });
 
  // === Utility ===
  function niceStep(max){
@@ -256,7 +278,13 @@
 
  function startSimulation(){
     resetSimulation();
-    const [mus,muk]=surfaceSel.value.split(',').map(Number);
+    let mus, muk;
+    if (surfaceSel.value === 'custom') {
+        mus = parseFloat(customStatic.value);
+        muk = parseFloat(customKinetic.value);
+    } else {
+        [mus, muk] = surfaceSel.value.split(',').map(Number);
+    }
     const massKg=massSlider.value/1000; const FN=massKg*g;
     // Store theoretical values (still needed for physics logic)
     Fs_max=mus*FN;
