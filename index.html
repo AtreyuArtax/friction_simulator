@@ -5,27 +5,227 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Friction Lab Simulation</title>
 <style>
- :root{--primary:#007acc;--accent:#c00;--bg:#f7f7f7;}
+ :root{--primary:#007acc;--accent:#c00;--bg:#f7f7f7;--vslider-space:48px;}
  *{box-sizing:border-box;}
- body{margin:0;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:#333;}
- h1{text-align:center;margin:20px 0;font-size:2rem;}
- .container{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;max-width:1200px;margin:0 auto 40px;padding:0 15px;}
- .info-container{flex:1 1 320px;min-width:280px;display:flex;flex-direction:column;gap:18px;}
- .controls{display:flex;flex-direction:column;gap:14px;}
- .controls-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 15px;}
- label{font-weight:600;}
- select,input[type=range],input[type=number]{padding:6px 10px;font-size:1rem;border:1px solid #ccc;border-radius:4px;background:#fff;}
- input[type=range]{width:200px;cursor:pointer;}
- .controls-row label + label {margin-left: 15px;}
- .mass-btn{padding:6px 10px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;min-width:36px;text-align:center;font-size:1rem;}
- .mass-btn:active{background:#eee;}
- button.action{padding:9px 20px;font-size:1rem;border:none;border-radius:4px;color:#fff;cursor:pointer;}
- #startBtn{background:var(--primary);}#resetBtn{background:#666;}
- #startBtn:disabled,#resetBtn:disabled{background:#999;cursor:not-allowed;}
- .readout{font-size:2.1rem;color:var(--accent);text-align:center;min-height:2.8rem;letter-spacing:0.5px;}
- .results{font-size:1.15rem;text-align:left; min-height:4rem; /* Adjusted height */ line-height:1.45; padding-left: 10px;}
- .graph-container{flex:1 1 600px;min-width:320px;}
- canvas{background:#fff;border:1px solid #ccc;width:100%;height:auto;display:block;}
+body{margin:0;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:#333;overflow-y:scroll;}
+ h1{text-align:center;margin:12px 0 10px;font-size:1.6rem;line-height:1.1;}
+ .container{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:20px;max-width:1200px;margin:0 auto 28px;padding:0 15px;}
+ .info-container{
+    flex: 0 0 420px; /* Wider fixed width so controls fit on one line */
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+ }
+ .controls{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: 100%;
+ }
+ .controls-row{
+    display:flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+ }
+/* inline-row used to place a label and control on the same line */
+.inline-row{flex-direction:row;align-items:center;gap:12px;}
+.inline-label{flex:0 0 auto;min-width:110px;font-weight:600;color:#444;}
+.inline-select{flex:1 1 auto;max-width:320px;}
+.inline-range{width:200px;}
+ label{font-weight:600;color:#444;}
+ select,input[type=range],input[type=number]{
+    padding:6px 10px;
+    font-size:1rem;
+    border:1px solid #ccc;
+    border-radius:4px;
+    background:#fff;
+    width: 100%;
+    box-sizing: border-box;
+ }
+ select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 35px;
+ }
+ .mass-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* Removed light grey background so controls sit on white card */
+    background: transparent;
+    padding: 6px 8px; /* slightly smaller padding to match visual spacing */
+    border-radius: 4px;
+    width: 100%;
+ }
+ .mass-input {
+    width: 80px !important;
+    text-align: right;
+    border: 1px solid #ddd;
+    flex-shrink: 0;
+ }
+ input[type=range]{
+    flex: 1;
+    margin: 0;
+    min-width: 0;
+ }
+ input[type=range] {
+    accent-color: var(--primary);
+ }
+ /* Modern slider styling */
+ input[type=range] {
+    height: 8px;
+    -webkit-appearance: none;
+    background: #ddd;
+    border-radius: 4px;
+    padding: 0;
+ }
+ input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+    margin-top: -4px;
+ }
+ input[type=range]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+ }
+ input[type=range]:focus {
+    outline: none;
+ }
+.controls-row:has(button) {
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    justify-content: center; /* center the action buttons */
+ }
+button.action{
+   padding: 12px 24px;
+   font-size: 1rem;
+   border: none;
+   border-radius: 4px;
+   color: #fff;
+   cursor: pointer;
+   transition: filter 0.2s;
+   flex: 0 0 auto;
+   min-width: 140px;
+ }
+ button.action:hover {
+    filter: brightness(1.1);
+ }
+ #startBtn{
+    background: #1a73e8;
+    font-weight: 500;
+ }
+ #resetBtn{
+    background: #666;
+ }
+ #startBtn:disabled,#resetBtn:disabled{
+    background:#999;
+    cursor:not-allowed;
+    filter: none;
+ }
+ .readout{
+    background: #fff;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 64px;
+ }
+ .readout-label {
+    font-size: 0.875rem;
+    color: var(--accent);
+    font-weight: 500;
+    margin: 0;
+    white-space: nowrap;
+ }
+ #forceReadout {
+    font-size: 2.1rem;
+    color: var(--accent);
+    text-align: left;
+    letter-spacing: 0.5px;
+    margin: 0;
+ }
+ .results{
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 1.15rem;
+    line-height: 1.45;
+ }
+ .results-heading {
+    font-size: 1.25rem;
+    color: #444;
+    font-weight: 500;
+    margin-bottom: 16px;
+ }
+ .awaiting-data {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
+ }
+.results .result-row{
+   display:flex;
+   align-items:center;
+   justify-content:space-between;
+   padding:8px 0;
+}
+.results .result-label{
+   flex:1 1 auto;
+}
+.results .result-value{
+   flex:0 0 auto;
+   color:#222;
+   font-weight:600;
+}
+/* Custom coefficients row: show static and kinetic side-by-side and centered. Hidden by default; JS will toggle display. */
+#customCoeffs{
+   display:none;
+   flex-direction:row;
+   gap:18px;
+   align-items:center;
+   justify-content:center;
+}
+#customCoeffs label{display:flex;flex-direction:column;align-items:center;gap:6px;margin:0;}
+#customCoeffs input[type=number]{width:80px !important;padding:8px;}
+ .graph-container{flex:1 1 600px;min-width:320px;display:flex;justify-content:center;align-items:flex-start;padding-top:6px;}
+ .graph-card{
+    background: #fff;
+    /* base padding + reserved space for a possible vertical slider to avoid layout shift */
+    padding: 20px;
+    padding-right: calc(20px + var(--vslider-space));
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    border: 1px solid #e6e6e6;
+    width: 620px; /* match canvas intrinsic width */
+    height: 420px; /* match canvas intrinsic height */
+    box-sizing: content-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+ .graph-card canvas{background:#fff;border:none;display:block;width:620px;height:420px;}
  @media(max-width:800px){.graph-container,.info-container{flex:1 1 100%;}}
 </style>
 </head>
@@ -34,9 +234,9 @@
 <div class="container">
  <div class="info-container">
   <div class="controls">
-   <div class="controls-row">
-    <label for="surface">Surface Type:</label>
-    <select id="surface">
+   <div class="controls-row inline-row">
+    <label for="surface" class="inline-label">Surface Type</label>
+    <select id="surface" class="inline-select">
      <option value="0.90,0.80">Rubber on Concrete</option>
      <option value="0.55,0.45">Wood on Carpet</option>
      <option value="0.05,0.03">Steel on Ice</option>
@@ -48,30 +248,42 @@
      <option value="custom">Custom Surface</option>
     </select>
    </div>
-   <div class="controls-row" id="customCoeffs" style="display: none;">
-    <label>
-      Static: <input type="number" id="customStatic" min="0" max="2" step="0.01" value="0.50" style="width: 80px;">
-    </label>
-    <label>
-      Kinetic: <input type="number" id="customKinetic" min="0" max="2" step="0.01" value="0.40" style="width: 80px;">
-    </label>
-   </div>
-   <div class="controls-row">
-    <label for="mass">Mass: <span id="massDisplay">0.100</span>&nbsp;kg</label>
-    <button class="mass-btn" id="massDec">&#9664;</button>
-    <input type="range" id="mass" min="100" max="2000" step="10" value="100">
-    <button class="mass-btn" id="massInc">&#9654;</button>
-   </div>
+    <div class="controls-row" id="customCoeffs" style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:24px;">
+         <div style="display:flex;align-items:center;gap:8px;">
+            <label for="customStatic" style="margin:0;font-weight:600;color:#444;">Static:</label>
+            <input type="number" id="customStatic" min="0" max="2" step="0.01" value="0.50" style="width:80px;" disabled>
+         </div>
+         <div style="display:flex;align-items:center;gap:8px;">
+            <label for="customKinetic" style="margin:0;font-weight:600;color:#444;">Kinetic:</label>
+            <input type="number" id="customKinetic" min="0" max="2" step="0.01" value="0.40" style="width:80px;" disabled>
+         </div>
+      </div>
+      <div class="controls-row mass-row inline-row" style="align-items:center;">
+         <label for="mass" class="inline-label" style="margin-right:8px;">Mass:</label>
+         <div class="mass-controls" style="flex:1 1 auto;">
+             <input type="number" id="massInput" class="mass-input" min="0.100" max="2.000" step="0.001" value="0.100">
+             <span>kg</span>
+             <input type="range" id="mass" min="100" max="2000" step="1" value="100" class="inline-range">
+         </div>
+      </div>
    <div class="controls-row">
     <button id="startBtn" class="action">Start Simulation</button>
     <button id="resetBtn" class="action" disabled>Reset</button>
    </div>
+   </div>
+   <div class="readout">
+      <span class="readout-label">LIVE APPLIED FORCE</span>
+      <div id="forceReadout">0.00&nbsp;N</div>
+   </div>
+  <div class="results" id="results">
+    <div class="results-heading">Measurement Results</div>
+    <div class="awaiting-data">Awaiting simulation data...</div>
   </div>
-  <div class="readout" id="forceReadout">0.00&nbsp;N</div>
-  <div class="results" id="results"></div>
  </div>
  <div class="graph-container">
-  <canvas id="graph" width="620" height="420"></canvas>
+   <div class="graph-card">
+      <canvas id="graph" width="620" height="420"></canvas>
+   </div>
  </div>
 </div>
 <script>
@@ -83,9 +295,6 @@
  const customStatic=document.getElementById('customStatic');
  const customKinetic=document.getElementById('customKinetic');
  const massSlider=document.getElementById('mass');
- const massDisplay=document.getElementById('massDisplay');
- const massDec=document.getElementById('massDec');
- const massInc=document.getElementById('massInc');
  const startBtn=document.getElementById('startBtn');
  const resetBtn=document.getElementById('resetBtn');
  const forceReadout=document.getElementById('forceReadout');
@@ -93,9 +302,36 @@
  const canvas=document.getElementById('graph');
  const ctx=canvas.getContext('2d');
 
+ // === High DPI Support ===
+ function setupHiDPI() {
+    const dpr = window.devicePixelRatio || 1;
+    // Measure the canvas CSS size (already constrained by .graph-card)
+    const rect = canvas.getBoundingClientRect();
+    const cssWidth = Math.round(rect.width);
+    const cssHeight = Math.round(rect.height);
+    // Set the internal pixel size for crisp rendering
+    canvas.width = cssWidth * dpr;
+    canvas.height = cssHeight * dpr;
+    // Reset any existing transforms and scale once
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Ensure the canvas CSS size remains the same
+    canvas.style.width = `${cssWidth}px`;
+    canvas.style.height = `${cssHeight}px`;
+    return dpr;
+ }
+ const dpr = setupHiDPI();
+
  // === Layout ===
- const AX=60, TOP=20, BOTTOM=360, RIGHT=canvas.width-20;
- const GRAPH_W=RIGHT-AX, GRAPH_H=BOTTOM-TOP;
+ // Compute layout based on displayed canvas size (CSS pixels)
+ const canvasRect = canvas.getBoundingClientRect();
+ const CANVAS_W = canvasRect.width;
+ const CANVAS_H = canvasRect.height;
+ const AX = 60;
+ const TOP = 20;
+ const BOTTOM = CANVAS_H - 40; // leave a larger bottom margin so axis labels fit
+ const RIGHT = CANVAS_W - 20;
+ const GRAPH_W = RIGHT - AX;
+ const GRAPH_H = BOTTOM - TOP;
 
  // === Simulation parameters ===
  const dt=0.05;
@@ -116,19 +352,35 @@
  let timeSpan=8;
 
  // === Mass UI ===
- function updateMassDisplay(){massDisplay.textContent=(massSlider.value/1000).toFixed(3);} updateMassDisplay();
- massSlider.addEventListener('input',updateMassDisplay);
- massDec.addEventListener('click',()=>{massSlider.value=Math.max(100,Number(massSlider.value)-10);updateMassDisplay();});
- massInc.addEventListener('click',()=>{massSlider.value=Math.min(2000,Number(massSlider.value)+10);updateMassDisplay();});
+ const massInput = document.getElementById('massInput');
  
- // === Surface UI ===
- surfaceSel.addEventListener('change', () => {
-    if (surfaceSel.value === 'custom') {
-        customCoeffs.style.display = 'flex';
-    } else {
-        customCoeffs.style.display = 'none';
+ function updateFromSlider() {
+    const massKg = (massSlider.value/1000).toFixed(3);
+    massInput.value = massKg;
+ }
+ 
+ function updateFromInput() {
+    const massKg = parseFloat(massInput.value);
+    if (!isNaN(massKg) && massKg >= 0.1 && massKg <= 2.0) {
+        massSlider.value = Math.round(massKg * 1000);
     }
- });
+ }
+ 
+ // Initialize with default value
+ updateFromSlider();
+ 
+ // Add event listeners
+ massSlider.addEventListener('input', updateFromSlider);
+ massInput.addEventListener('input', updateFromInput);
+ 
+// === Surface UI ===
+surfaceSel.addEventListener('change', () => {
+   const isCustom = surfaceSel.value === 'custom';
+   customCoeffs.style.display = isCustom ? 'flex' : 'none';
+   // Enable custom inputs only when 'custom' is selected and simulation is not running
+   customStatic.disabled = !isCustom || startBtn.disabled;
+   customKinetic.disabled = !isCustom || startBtn.disabled;
+});
 
  // === Utility ===
  function niceStep(max){
@@ -150,12 +402,45 @@
     for(let f=0;f<=yMax;f+=stepY){ ctx.strokeStyle='#ccc'; const y=BOTTOM-f*yScale; ctx.beginPath();ctx.moveTo(AX,y);ctx.lineTo(RIGHT,y);ctx.stroke(); }
     for(let f=stepY/2;f<yMax;f+=stepY){ ctx.strokeStyle='#eee'; const y=BOTTOM-f*yScale; ctx.beginPath();ctx.moveTo(AX,y);ctx.lineTo(RIGHT,y);ctx.stroke(); }
     for(let s=0;s<=timeSpan;s+=stepX){ const x=AX+s*xScale; ctx.strokeStyle=s%1===0?'#ccc':'#eee'; ctx.beginPath();ctx.moveTo(x,TOP);ctx.lineTo(x,BOTTOM);ctx.stroke(); }
-    ctx.strokeStyle='#000'; ctx.lineWidth=1.2; ctx.beginPath();ctx.moveTo(AX,TOP);ctx.lineTo(AX,BOTTOM);ctx.lineTo(RIGHT,BOTTOM);ctx.stroke();
-    ctx.font='12px Arial'; ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.fillText('Time (s)',(AX+RIGHT)/2,BOTTOM+28);
-    ctx.save(); ctx.translate(AX-38,TOP+GRAPH_H/2); ctx.rotate(-Math.PI/2); ctx.fillText('Force (N)',0,0); ctx.restore();
-    for(let s=0;s<=timeSpan;s+=stepX){ const x=AX+s*xScale; ctx.fillText(s.toString(),x,BOTTOM+15); }
-    ctx.textAlign='right'; const fmt=stepY<1?(v)=>v.toFixed(1):(v)=>v.toFixed(0); // Axis labels might still use 1 decimal if step is small
-    for(let f=0;f<=yMax+1e-6;f+=stepY){ const y=BOTTOM-f*yScale; ctx.fillText(fmt(f),AX-5,y+4);}
+    // Draw main axes with slightly thicker lines
+    ctx.strokeStyle='#000'; 
+    ctx.lineWidth=1.5; 
+    ctx.beginPath();
+    ctx.moveTo(AX,TOP);
+    ctx.lineTo(AX,BOTTOM);
+    ctx.lineTo(RIGHT,BOTTOM);
+    ctx.stroke();
+
+    // Use system font matching the UI
+    const fontFamily = '"Segoe UI","Helvetica Neue",Arial,sans-serif';
+    ctx.font = `12px ${fontFamily}`; 
+    ctx.fillStyle='#000'; 
+    ctx.textAlign='center';
+
+    // Crisp text rendering
+    ctx.textBaseline = 'middle';
+    
+    // Axis labels
+    ctx.fillText('Time (s)',(AX+RIGHT)/2,BOTTOM+28);
+    ctx.save(); 
+    ctx.translate(AX-38,TOP+GRAPH_H/2); 
+    ctx.rotate(-Math.PI/2); 
+    ctx.fillText('Force (N)',0,0); 
+    ctx.restore();
+    
+    // Time markers
+    for(let s=0;s<=timeSpan;s+=stepX){ 
+        const x=AX+s*xScale; 
+        ctx.fillText(s.toString(),x,BOTTOM+15); 
+    }
+    
+    // Force markers
+    ctx.textAlign='right'; 
+    const fmt=stepY<1?(v)=>v.toFixed(1):(v)=>v.toFixed(0);
+    for(let f=0;f<=yMax+1e-6;f+=stepY){ 
+        const y=BOTTOM-f*yScale; 
+        ctx.fillText(fmt(f),AX-5,y);
+    }
     return {xScale,yScale};
  }
 
@@ -163,8 +448,20 @@
     const maxF=Math.max(1,...data.map(d=>d.force));
     const scales=drawAxes(maxF);
     if(data.length<2) return;
-    ctx.strokeStyle='#007acc'; ctx.lineWidth=2; ctx.beginPath();
-    data.forEach((d,i)=>{ const x=AX+d.time*scales.xScale; const y=BOTTOM-d.force*scales.yScale; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+   // Draw data line with improved crispness
+   const styles = getComputedStyle(document.documentElement);
+   ctx.strokeStyle = styles.getPropertyValue('--primary') || '#007acc';
+   ctx.lineWidth = 2; // context already scaled for DPR
+    ctx.beginPath();
+    
+    // Align to pixel grid for sharper lines
+    data.forEach((d,i)=>{ 
+   const x = AX + d.time * scales.xScale;
+   const y = BOTTOM - d.force * scales.yScale;
+        if(i===0) ctx.moveTo(x,y); 
+        else ctx.lineTo(x,y); 
+    });
+    
     ctx.stroke();
  }
 
@@ -207,15 +504,23 @@
     startBtn.disabled=running;
     resetBtn.disabled=!running;
     surfaceSel.disabled=running;
-    massSlider.disabled=running; massDec.disabled=running; massInc.disabled=running;
+    massSlider.disabled=running;
+    massInput.disabled=running;
+   // Also manage custom coeff inputs: only enabled when custom is selected and not running
+   const isCustom = surfaceSel.value === 'custom';
+   customStatic.disabled = !isCustom || running;
+   customKinetic.disabled = !isCustom || running;
  }
 
  function resetSimulation(){
     if(timer){ clearInterval(timer); timer=null; }
     data=[]; t=0; moving=false; appliedForce=0; tMoveStart=null; endTime=MAX_TOTAL_TIME; timeSpan=8;
-    // *** CHANGE: Reset readout to 2 decimal places ***
+    // Reset readout and results to default state
     forceReadout.innerHTML='0.00&nbsp;N';
-    resultsDiv.innerHTML='';
+    resultsDiv.innerHTML = `
+        <div class="results-heading">Measurement Results</div>
+        <div class="awaiting-data">Awaiting simulation data...</div>
+    `;
     setUI(false);
     plotData();
  }
@@ -264,11 +569,18 @@
          console.log(`Measured Fs (raw): ${measured_Fs_max}`);
          console.log(`Measured Fk (raw): ${measured_Fk} (from ${kineticDataCount} points)`);
 
-         // *** CHANGE: Display only measured results ***
-         resultsDiv.innerHTML = `<b>Peak Static Friction:</b><br>` +
-                              `&nbsp;&nbsp;${measured_Fs_max.toFixed(2)} N<br><br>` +
-                              `<b>Average Kinetic Friction:</b><br>` +
-                              `&nbsp;&nbsp;${moving && kineticDataCount > 0 ? measured_Fk.toFixed(2) + ' N' : 'N/A'}`;
+         // Display results
+         resultsDiv.innerHTML = `
+            <div class="results-heading">Measurement Results</div>
+            <div class="result-row">
+               <div class="result-label" style="color:#1a73e8;font-weight:500;">Peak Static Friction (F<sub>s,max</sub>):</div>
+               <div class="result-value">${measured_Fs_max.toFixed(2)} N</div>
+            </div>
+            <div class="result-row">
+               <div class="result-label" style="color:var(--accent);font-weight:500;">Average Kinetic Friction (F<sub>k</sub>):</div>
+               <div class="result-value">${moving && kineticDataCount > 0 ? measured_Fk.toFixed(2) + ' N' : 'N/A'}</div>
+            </div>
+         `;
 
 
          // The forceReadout still shows the last noisy value from step()
