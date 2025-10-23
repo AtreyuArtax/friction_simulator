@@ -5,10 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Friction Lab Simulation</title>
 <style>
- :root{--primary:#007acc;--accent:#c00;--bg:#f7f7f7;--vslider-space:48px;}
+ :root{
+    --primary:#007acc;
+    --accent:#c00;
+    --bg:#f7f7f7;
+    --text:#333;
+    --text-secondary:#444;
+    --card-bg:#fff;
+    --card-border:#e6e6e6;
+    --card-shadow:rgba(0,0,0,0.1);
+    --input-bg:#fff;
+    --input-border:#ccc;
+    --grid-major:#000;
+    --grid-minor:#ccc;
+    --grid-light:#eee;
+    --vslider-space:48px;
+ }
+ :root.dark-mode{
+    --primary:#5eb3ff;
+    --accent:#ff8080;
+    --bg:#0f0f0f;
+    --text:#e8e8e8;
+    --text-secondary:#c0c0c0;
+    --card-bg:#1e1e1e;
+    --card-border:#3a3a3a;
+    --card-shadow:rgba(0,0,0,0.5);
+    --input-bg:#2a2a2a;
+    --input-border:#4a4a4a;
+    --grid-major:#d0d0d0;
+    --grid-minor:#505050;
+    --grid-light:#3a3a3a;
+ }
  *{box-sizing:border-box;}
-body{margin:0;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:#333;overflow-y:scroll;}
- h1{text-align:center;margin:12px 0 10px;font-size:1.6rem;line-height:1.1;}
+ body{margin:0;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);overflow-y:scroll;transition:background-color 0.3s ease,color 0.3s ease;}
+ h1{text-align:center;margin:12px 0 10px;font-size:1.6rem;line-height:1.1;color:var(--text);}
  .container{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:20px;max-width:1200px;margin:0 auto 28px;padding:0 15px;}
  .info-container{
     flex: 0 0 420px; /* Wider fixed width so controls fit on one line */
@@ -20,10 +50,10 @@ body{margin:0;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;backgroun
     display:flex;
     flex-direction:column;
     gap:16px;
-    background: white;
+    background: var(--card-bg);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px var(--card-shadow);
     width: 100%;
  }
  .controls-row{
@@ -34,27 +64,31 @@ body{margin:0;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;backgroun
  }
 /* inline-row used to place a label and control on the same line */
 .inline-row{flex-direction:row;align-items:center;gap:12px;}
-.inline-label{flex:0 0 auto;min-width:110px;font-weight:600;color:#444;}
+.inline-label{flex:0 0 auto;min-width:110px;font-weight:600;color:var(--text-secondary);}
 .inline-select{flex:1 1 auto;max-width:320px;}
 .inline-range{width:200px;}
- label{font-weight:600;color:#444;}
+ label{font-weight:600;color:var(--text-secondary);}
  select,input[type=range],input[type=number]{
     padding:6px 10px;
     font-size:1rem;
-    border:1px solid #ccc;
+    border:1px solid var(--input-border);
     border-radius:4px;
-    background:#fff;
+    background:var(--input-bg);
+    color:var(--text);
     width: 100%;
     box-sizing: border-box;
  }
  select {
-    appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 10px center;
     background-size: 16px;
     padding-right: 35px;
+ }
+ :root.dark-mode select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8e8e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
  }
  .mass-controls {
     display: flex;
@@ -69,7 +103,7 @@ body{margin:0;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;backgroun
  .mass-input {
     width: 80px !important;
     text-align: right;
-    border: 1px solid #ddd;
+    border: 1px solid var(--input-border);
     flex-shrink: 0;
  }
  input[type=range]{
@@ -122,30 +156,46 @@ button.action{
    border-radius: 4px;
    color: #fff;
    cursor: pointer;
-   transition: filter 0.2s;
+   transition: all 0.2s ease;
    flex: 0 0 auto;
    min-width: 140px;
+   box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+   position: relative;
+   top: 0;
  }
  button.action:hover {
     filter: brightness(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    top: -1px;
+ }
+ button.action:active {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    top: 2px;
+    filter: brightness(0.95);
  }
  #startBtn{
     background: #1a73e8;
     font-weight: 500;
  }
  #resetBtn{
-    background: #666;
+    background: #dc3545; /* Red when enabled (simulation running) */
+    transition: background 0.3s ease;
  }
- #startBtn:disabled,#resetBtn:disabled{
+ #resetBtn:disabled{
+    background:#999; /* Grey when disabled */
+    cursor:not-allowed;
+    filter: none;
+ }
+ #startBtn:disabled{
     background:#999;
     cursor:not-allowed;
     filter: none;
  }
  .readout{
-    background: #fff;
+    background: var(--card-bg);
     padding: 16px 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px var(--card-shadow);
     display: flex;
     align-items: center;
     gap: 18px;
@@ -166,21 +216,22 @@ button.action{
     margin: 0;
  }
  .results{
-    background: #fff;
+    background: var(--card-bg);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px var(--card-shadow);
     font-size: 1.15rem;
     line-height: 1.45;
  }
  .results-heading {
     font-size: 1.25rem;
-    color: #444;
+    color: var(--text);
     font-weight: 500;
     margin-bottom: 16px;
  }
  .awaiting-data {
-    color: #666;
+    color: var(--text);
+    opacity: 0.7;
     font-style: italic;
     text-align: center;
     padding: 20px 0;
@@ -196,7 +247,7 @@ button.action{
 }
 .results .result-value{
    flex:0 0 auto;
-   color:#222;
+   color:var(--text);
    font-weight:600;
 }
 /* Custom coefficients row: show static and kinetic side-by-side and centered. Hidden by default; JS will toggle display. */
@@ -209,27 +260,88 @@ button.action{
 }
 #customCoeffs label{display:flex;flex-direction:column;align-items:center;gap:6px;margin:0;}
 #customCoeffs input[type=number]{width:80px !important;padding:8px;}
- .graph-container{flex:1 1 600px;min-width:320px;display:flex;justify-content:center;align-items:flex-start;padding-top:6px;}
- .graph-card{
-    background: #fff;
-    /* base padding + reserved space for a possible vertical slider to avoid layout shift */
-    padding: 20px;
-    padding-right: calc(20px + var(--vslider-space));
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    border: 1px solid #e6e6e6;
-    width: 620px; /* match canvas intrinsic width */
-    height: 420px; /* match canvas intrinsic height */
-    box-sizing: content-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Theme toggle button */
+.theme-toggle {
+   position: fixed;
+   bottom: 20px;
+   right: 20px;
+   width: 50px;
+   height: 50px;
+   border-radius: 50%;
+   background: var(--card-bg);
+   border: 2px solid var(--input-border);
+   cursor: pointer;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   box-shadow: 0 2px 8px var(--card-shadow);
+   transition: all 0.3s ease;
+   z-index: 1000;
 }
- .graph-card canvas{background:#fff;border:none;display:block;width:620px;height:420px;}
- @media(max-width:800px){.graph-container,.info-container{flex:1 1 100%;}}
-</style>
+.theme-toggle:hover {
+   transform: scale(1.1);
+   box-shadow: 0 4px 12px var(--card-shadow);
+}
+.theme-toggle svg {
+   width: 24px;
+   height: 24px;
+   fill: var(--text);
+   transition: transform 0.3s ease;
+}
+.theme-toggle:hover svg {
+   transform: rotate(20deg);
+}
+ .graph-container{flex:1 1 600px;min-width:280px;display:flex;justify-content:center;align-items:stretch;padding-top:0;}
+ .graph-card{
+   background: var(--card-bg);
+   /* base padding + reserved space for a possible vertical slider to avoid layout shift */
+   padding: 20px;
+   padding-right: calc(20px + var(--vslider-space));
+   border-radius: 8px;
+   box-shadow: 0 2px 4px var(--card-shadow);
+   border: 1px solid var(--card-border);
+   width: 100%;
+   max-width: 708px; /* 620px canvas + 20px left padding + 68px right padding (20 + 48) */
+   box-sizing: border-box;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   min-height: 100%;
+}
+ .graph-card canvas{
+   background:var(--card-bg);
+   border:none;
+   display:block;
+   width: 620px;
+   height: 420px;
+   max-width: 100%;
+   height: auto;
+}
+ @media(max-width:800px){
+   .graph-container,.info-container{flex:1 1 100%;}
+   .graph-card{padding-right:20px;max-width:100%;} /* Remove reserved space on mobile */
+ }
+ @media(max-width:500px){
+   .graph-card{padding:12px;}
+ }</style>
 </head>
 <body>
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+  <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+  <svg class="moon-icon" style="display:none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+</button>
 <h1>Friction Lab Simulation</h1>
 <div class="container">
  <div class="info-container">
@@ -237,29 +349,29 @@ button.action{
    <div class="controls-row inline-row">
     <label for="surface" class="inline-label">Surface Type</label>
     <select id="surface" class="inline-select">
-     <option value="0.90,0.80">Rubber on Concrete</option>
-     <option value="0.55,0.45">Wood on Carpet</option>
+     <option value="1.0,0.80">Rubber on Concrete</option>
+     <option value="0.3,0.25">Rubber on Wet Concrete</option>
      <option value="0.05,0.03">Steel on Ice</option>
      <option value="0.60,0.50">Leather on Wood</option>
-     <option value="0.40,0.30">Wood on Wood</option>
+     <option value="0.45,0.30">Wood on Wood</option>
      <option value="0.04,0.02">Wood on Ice</option>
      <option value="0.65,0.55">Rubber on Wood</option>
      <option value="0.74,0.57">Steel on Steel (dry)</option>
      <option value="custom">Custom Surface</option>
     </select>
    </div>
-    <div class="controls-row" id="customCoeffs" style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:24px;">
+    <div class="controls-row" id="customCoeffs" style="display:none;flex-direction:row;align-items:center;justify-content:center;gap:24px;">
          <div style="display:flex;align-items:center;gap:8px;">
-            <label for="customStatic" style="margin:0;font-weight:600;color:#444;">Static:</label>
+            <label for="customStatic" style="margin:0;font-weight:600;color:var(--text-secondary);">Static:</label>
             <input type="number" id="customStatic" min="0" max="2" step="0.01" value="0.50" style="width:80px;" disabled>
          </div>
          <div style="display:flex;align-items:center;gap:8px;">
-            <label for="customKinetic" style="margin:0;font-weight:600;color:#444;">Kinetic:</label>
+            <label for="customKinetic" style="margin:0;font-weight:600;color:var(--text-secondary);">Kinetic:</label>
             <input type="number" id="customKinetic" min="0" max="2" step="0.01" value="0.40" style="width:80px;" disabled>
          </div>
       </div>
       <div class="controls-row mass-row inline-row" style="align-items:center;">
-         <label for="mass" class="inline-label" style="margin-right:8px;">Mass:</label>
+         <label for="mass" class="inline-label" style="margin-right:8px;">Mass</label>
          <div class="mass-controls" style="flex:1 1 auto;">
              <input type="number" id="massInput" class="mass-input" min="0.100" max="2.000" step="0.001" value="0.100">
              <span>kg</span>
@@ -317,21 +429,29 @@ button.action{
     // Ensure the canvas CSS size remains the same
     canvas.style.width = `${cssWidth}px`;
     canvas.style.height = `${cssHeight}px`;
-    return dpr;
+    return {dpr, cssWidth, cssHeight};
  }
- const dpr = setupHiDPI();
+ 
+ // Initial setup
+ let setupResult = setupHiDPI();
+ let dpr = setupResult.dpr;
 
- // === Layout ===
- // Compute layout based on displayed canvas size (CSS pixels)
- const canvasRect = canvas.getBoundingClientRect();
- const CANVAS_W = canvasRect.width;
- const CANVAS_H = canvasRect.height;
- const AX = 60;
- const TOP = 20;
- const BOTTOM = CANVAS_H - 40; // leave a larger bottom margin so axis labels fit
- const RIGHT = CANVAS_W - 20;
- const GRAPH_W = RIGHT - AX;
- const GRAPH_H = BOTTOM - TOP;
+ // === Layout - Dynamic calculation ===
+ function getLayoutDimensions() {
+    const canvasRect = canvas.getBoundingClientRect();
+    const CANVAS_W = canvasRect.width;
+    const CANVAS_H = canvasRect.height;
+    const AX = 60;
+    const TOP = 20;
+    const BOTTOM = CANVAS_H - 40;
+    const RIGHT = CANVAS_W - 20;
+    const GRAPH_W = RIGHT - AX;
+    const GRAPH_H = BOTTOM - TOP;
+    return {CANVAS_W, CANVAS_H, AX, TOP, BOTTOM, RIGHT, GRAPH_W, GRAPH_H};
+ }
+ 
+ let layout = getLayoutDimensions();
+ let {CANVAS_W, CANVAS_H, AX, TOP, BOTTOM, RIGHT, GRAPH_W, GRAPH_H} = layout;
 
  // === Simulation parameters ===
  const dt=0.05;
@@ -392,18 +512,29 @@ surfaceSel.addEventListener('change', () => {
 
  // Draw axes & grid (No changes needed here)
  function drawAxes(maxF){
+    // Update layout dimensions in case canvas was resized
+    layout = getLayoutDimensions();
+    ({CANVAS_W, CANVAS_H, AX, TOP, BOTTOM, RIGHT, GRAPH_W, GRAPH_H} = layout);
+    
     const stepY=niceStep(maxF);
     const yMax=Math.ceil(maxF/stepY)*stepY;
     const stepX=1;
     const xScale=GRAPH_W/timeSpan;
     const yScale=GRAPH_H/yMax;
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    
+    // Get theme colors from CSS variables
+    const styles = getComputedStyle(document.documentElement);
+    const gridMinor = styles.getPropertyValue('--grid-minor').trim() || '#ccc';
+    const gridLight = styles.getPropertyValue('--grid-light').trim() || '#eee';
+    const gridMajor = styles.getPropertyValue('--grid-major').trim() || '#000';
+    
     ctx.lineWidth=1;
-    for(let f=0;f<=yMax;f+=stepY){ ctx.strokeStyle='#ccc'; const y=BOTTOM-f*yScale; ctx.beginPath();ctx.moveTo(AX,y);ctx.lineTo(RIGHT,y);ctx.stroke(); }
-    for(let f=stepY/2;f<yMax;f+=stepY){ ctx.strokeStyle='#eee'; const y=BOTTOM-f*yScale; ctx.beginPath();ctx.moveTo(AX,y);ctx.lineTo(RIGHT,y);ctx.stroke(); }
-    for(let s=0;s<=timeSpan;s+=stepX){ const x=AX+s*xScale; ctx.strokeStyle=s%1===0?'#ccc':'#eee'; ctx.beginPath();ctx.moveTo(x,TOP);ctx.lineTo(x,BOTTOM);ctx.stroke(); }
+    for(let f=0;f<=yMax;f+=stepY){ ctx.strokeStyle=gridMinor; const y=BOTTOM-f*yScale; ctx.beginPath();ctx.moveTo(AX,y);ctx.lineTo(RIGHT,y);ctx.stroke(); }
+    for(let f=stepY/2;f<yMax;f+=stepY){ ctx.strokeStyle=gridLight; const y=BOTTOM-f*yScale; ctx.beginPath();ctx.moveTo(AX,y);ctx.lineTo(RIGHT,y);ctx.stroke(); }
+    for(let s=0;s<=timeSpan;s+=stepX){ const x=AX+s*xScale; ctx.strokeStyle=s%1===0?gridMinor:gridLight; ctx.beginPath();ctx.moveTo(x,TOP);ctx.lineTo(x,BOTTOM);ctx.stroke(); }
     // Draw main axes with slightly thicker lines
-    ctx.strokeStyle='#000'; 
+    ctx.strokeStyle=gridMajor; 
     ctx.lineWidth=1.5; 
     ctx.beginPath();
     ctx.moveTo(AX,TOP);
@@ -414,7 +545,7 @@ surfaceSel.addEventListener('change', () => {
     // Use system font matching the UI
     const fontFamily = '"Segoe UI","Helvetica Neue",Arial,sans-serif';
     ctx.font = `12px ${fontFamily}`; 
-    ctx.fillStyle='#000'; 
+    ctx.fillStyle=gridMajor; 
     ctx.textAlign='center';
 
     // Crisp text rendering
@@ -452,6 +583,19 @@ surfaceSel.addEventListener('change', () => {
    const styles = getComputedStyle(document.documentElement);
    ctx.strokeStyle = styles.getPropertyValue('--primary') || '#007acc';
    ctx.lineWidth = 2; // context already scaled for DPR
+   
+   // Add glow effect in dark mode
+   const isDark = document.documentElement.classList.contains('dark-mode');
+
+if (isDark) {
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 26;
+    ctx.shadowColor = 'rgba(0, 200, 255, 1)';
+    ctx.strokeStyle = 'rgba(0, 200, 255, 1)';
+} else {
+    ctx.shadowBlur = 0;
+}
+   
     ctx.beginPath();
     
     // Align to pixel grid for sharper lines
@@ -463,6 +607,9 @@ surfaceSel.addEventListener('change', () => {
     });
     
     ctx.stroke();
+    
+    // Reset shadow for other drawing operations
+    ctx.shadowBlur = 0;
  }
 
  // === Simulation loop ===
@@ -609,8 +756,52 @@ surfaceSel.addEventListener('change', () => {
  startBtn.addEventListener('click',startSimulation);
  resetBtn.addEventListener('click',resetSimulation);
 
- // Initial plot
+ // === Theme Toggle ===
+ const themeToggle = document.getElementById('themeToggle');
+ const sunIcon = themeToggle.querySelector('.sun-icon');
+ const moonIcon = themeToggle.querySelector('.moon-icon');
+ 
+ // Check for saved theme preference or default to light mode
+ const savedTheme = localStorage.getItem('theme') || 'light';
+ if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark-mode');
+    sunIcon.style.display = 'none';
+    moonIcon.style.display = 'block';
+ }
+ 
+ themeToggle.addEventListener('click', () => {
+    document.documentElement.classList.toggle('dark-mode');
+    const isDark = document.documentElement.classList.contains('dark-mode');
+    
+    if (isDark) {
+        sunIcon.style.display = 'none';
+        moonIcon.style.display = 'block';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        sunIcon.style.display = 'block';
+        moonIcon.style.display = 'none';
+        localStorage.setItem('theme', 'light');
+    }
+    
+    // Redraw the graph with new theme colors
+    plotData();
+ });
+
+ // Initial plot - draw after theme is set
  plotData(); // Draw the initial empty axes with 0.00 readout
+ 
+ // === Responsive resize handler ===
+ let resizeTimeout;
+ window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        // Recalculate canvas size and DPI
+        setupResult = setupHiDPI();
+        dpr = setupResult.dpr;
+        // Redraw graph with new dimensions
+        plotData();
+    }, 150); // Debounce resize events
+ });
 })();
 </script>
 </body>
